@@ -9,26 +9,31 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var vm = BreedViewModel()
+    @State private var searchTerm = ""
+    
+    var filteredCats: [Breed] {
+        guard !searchTerm.isEmpty else { return vm.breeds }
+        return vm.breeds.filter { $0.breed.localizedCaseInsensitiveContains(searchTerm) }
+    }
     
     var body: some View {
         NavigationStack {
             List {
-                ForEach(vm.breeds, id: \.breed) { breed in
+                ForEach(filteredCats, id: \.breed) { breed in
                     NavigationLink(breed.breed) {
                         BreedDetailView(breed: breed)
                     }
                     .listRowSeparator(.hidden)
                 }
             }
-            .listStyle(.plain)
             .navigationTitle("Cat Breeds")
+            .searchable(text: $searchTerm, prompt: "Search Cat Breeds")
+            .listStyle(.plain)
         }
-        .onAppear(perform: vm.fetchData)
-        .alert(isPresented: $vm.hasError,
-               error: vm.error) {
-            Button(action: vm.fetchData) {
-                Text("Retry")
-            }
+        .task {
+            await vm.getBreeds(urlString: APIEndPoints.CatAPIEndPoint)
+        }.refreshable {
+            await vm.getBreeds(urlString: APIEndPoints.CatAPIEndPoint)
         }
     }
 }
