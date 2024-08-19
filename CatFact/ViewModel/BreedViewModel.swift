@@ -13,34 +13,22 @@ final class BreedViewModel: ObservableObject {
     @Published var error: NetworkError?
     
     private var bag = Set<AnyCancellable>()
+    let networkManager: NetworkProtocol
     
-    func getBreeds(urlString: String) async {
-//        let networkManager = NetworkManager()
-        if let url = URL(string: urlString) {
-            URLSession
-                .shared
-                .dataTaskPublisher(for: url)
-                .receive(on: DispatchQueue.main)
-                .map(\.data)
-                .tryMap({ data in
-                    let decoder = JSONDecoder()
-                    guard let response = try? decoder.decode(Response.self, from: data) else {
-                        throw NetworkError.failedToDecode
-                    }
-                    let breeds = response.data
+    init(networkManager: NetworkProtocol) {
+        self.networkManager = networkManager
+    }
+    
+    func getBreeds() {
+        guard let url = URL(string: APIEndPoints.CatAPIEndPoint) else { return }
+        networkManager.fetchData(url: url)
+            .receive(on: DispatchQueue.main)
+            .sink { completion in
+                print(completion)
+            } receiveValue: { (response: Response) in
+                self.breeds = response.data
+            }
+            .store(in: &bag)
 
-                    return breeds
-                })
-                .sink { [weak self] res in
-                    switch res {
-                    case .failure(let error):
-                        self?.error = NetworkError.custom(error: error)
-                    default: break
-                    }
-                } receiveValue: { [weak self] breeds in
-                    self?.breeds = breeds
-                }
-                .store(in: &bag)
-        }
     }
 }

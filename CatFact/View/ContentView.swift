@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var vm = BreedViewModel()
+    @StateObject private var vm = BreedViewModel(networkManager: NetworkManager())
     @State private var searchTerm = ""
     
     var filteredCats: [Breed] {
@@ -31,9 +31,9 @@ struct ContentView: View {
             .listStyle(.plain)
         }
         .task {
-            await vm.getBreeds(urlString: APIEndPoints.CatAPIEndPoint)
+            vm.getBreeds()
         }.refreshable {
-            await vm.getBreeds(urlString: APIEndPoints.CatAPIEndPoint)
+            vm.getBreeds()
         }
     }
 }
